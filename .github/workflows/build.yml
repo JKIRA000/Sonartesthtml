@@ -1,19 +1,38 @@
-name: My Test Single Project
+name: My Test Monorepo Project
+
 on:
   push:
     branches:
       - main
+    paths:
+      - 'lambdas/test/**'
   pull_request:
     types: [opened, synchronize, reopened]
+
 jobs:
   sonarcloud:
-    name: SonarCloud
-    runs-on: windows-latest
+    name: SonarCloud Scan
+    runs-on: windows-latest  # Run on Windows environment
+    strategy:
+      matrix:
+        repo: ['repo1', 'repo2']  # Define the repositories to scan
     steps:
+      # Checkout the code
       - uses: actions/checkout@v3
         with:
-          fetch-depth: 0  
+          fetch-depth: 0  # Fetch full history for accurate analysis
+          
+      # Install Java (required for SonarCloud, as it relies on Java for the scanner)
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'  # Use Zulu distribution (open-source JDK)
+          java-version: '11'    # Use Java 11 as required by SonarCloud
+          
+      # SonarCloud Scan
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
-        env: 
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: ${{ matrix.repo }}  # Run scan for each repo in the matrix
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}  # SonarCloud token from secrets
